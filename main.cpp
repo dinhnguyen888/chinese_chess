@@ -38,6 +38,8 @@ private:
 
 class WsSession : public std::enable_shared_from_this<WsSession> {
 public:
+    std::string name_;
+
     WsSession(tcp::socket&& socket, MatchLobby& lobby)
         : ws_(std::move(socket)), lobby_(lobby) {}
 
@@ -105,6 +107,7 @@ private:
 
         const std::string type = msg.value("type", "");
         if (type == "find_match") {
+            name_ = msg.value("name", "Player");
             lobby_.try_pair(shared_from_this());
             return;
         }
@@ -176,8 +179,8 @@ void MatchLobby::try_pair(std::shared_ptr<WsSession> session) {
     b->attach_opponent(a);
 
     constexpr int kRedFirst = 1;
-    a->send_json(json{{"type", "matched"}, {"color", "r"}, {"orderSide", kRedFirst}});
-    b->send_json(json{{"type", "matched"}, {"color", "b"}, {"orderSide", kRedFirst}});
+    a->send_json(json{{"type", "matched"}, {"color", "r"}, {"orderSide", kRedFirst}, {"opponentName", b->name_}});
+    b->send_json(json{{"type", "matched"}, {"color", "b"}, {"orderSide", kRedFirst}, {"opponentName", a->name_}});
 }
 
 class Listener : public std::enable_shared_from_this<Listener> {
