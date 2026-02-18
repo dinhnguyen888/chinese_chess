@@ -86,11 +86,16 @@ void WsSession::handle_message(const std::string& text) {
         return;
     }
     if (type == "create_room") {
-        lobby_.create_room(shared_from_this(), msg.value("roomName", "My Room"));
+        bool auto_start = msg.value("autoStart", false);
+        lobby_.create_room(shared_from_this(), msg.value("roomName", "My Room"), auto_start);
         return;
     }
     if (type == "join_room") {
         lobby_.join_room(shared_from_this(), msg.value("roomId", ""));
+        return;
+    }
+    if (type == "start_game") {
+        lobby_.start_game(shared_from_this(), msg.value("roomId", ""));
         return;
     }
     if (type == "list_rooms") {
