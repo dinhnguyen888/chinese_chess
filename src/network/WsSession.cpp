@@ -1,11 +1,39 @@
 #include "network/WsSession.h"
 #include "game/MatchLobby.h"
+#include "db/Database.h"
 #include <iostream>
+#include <jwt-cpp/jwt.h>
 
 namespace beast = boost::beast;
 namespace websocket = beast::websocket;
 using boost::asio::ip::tcp;
 using json = nlohmann::json;
+
+const std::string JWT_SECRET = "super_secret_key_123";
+
+static std::string generate_jwt(const std::string& username) {
+    auto token = jwt::create()
+        .set_issuer("chinese_chess")
+        .set_type("JWS")
+        .set_payload_claim("username", jwt::claim(username))
+        .set_expires_at(std::chrono::system_clock::now() + std::chrono::hours(24 * 7))
+        .sign(jwt::algorithm::hs256{JWT_SECRET});
+    return token;
+}
+
+static std::string decode_and_verify_jwt(const std::string& token) {
+    try {
+        auto decoded = jwt::decode(token);
+        auto verifier = jwt::verify()
+            .allow_algorithm(jwt::algorithm::hs256{JWT_SECRET})
+            .with_issuer("chinese_chess");
+        verifier.verify(decoded);
+        return decoded.get_payload_claim("username").as_string();
+    } catch (const std::exception& e) {
+        std::cerr << "JWT Verification Failed: " << e.what() << "\n";
+        return "";
+    }
+}
 
 static void fail(beast::error_code ec, char const* what) {
     if (ec != websocket::error::closed)
@@ -80,6 +108,44 @@ void WsSession::handle_message(const std::string& text) {
 
     const std::string type = msg.value("type", "");
     if (msg.contains("name")) name_ = msg.value("name", name_.empty() ? "Player" : name_);
+
+    if (type == "verify_jwt") {
+        std::string token = msg.value("token", "");
+        std::string user = decode_and_verify_jwt(token);
+        if (!user.empty()) {
+            name_ = user;
+            // Token is still good, extend or just return auth_success
+            send_json(json{{"type", "auth_success"}, {"username", user}, {"action", "verify"}});
+        } else {
+            send_json(json{{"type", "auth_fail"}, {"message", "Phiên đăng nhập hết hạn hoặc không hợp lệ"}});
+        }
+        return;
+    }
+
+    if (type == "register") {
+        std::string user = msg.value("username", "");
+        std::string pass = msg.value("password", "");
+        if (Database::get_instance().register_user(user, pass)) {
+            name_ = user;
+            std::string token = generate_jwt(user);
+            send_json(json{{"type", "auth_success"}, {"username", user}, {"action", "register"}, {"token", token}});
+        } else {
+            send_json(json{{"type", "error"}, {"message", "Tên đăng nhập đã tồn tại hoặc có lỗi xảy ra"}});
+        }
+        return;
+    }
+    if (type == "login") {
+        std::string user = msg.value("username", "");
+        std::string pass = msg.value("password", "");
+        if (Database::get_instance().login_user(user, pass)) {
+            name_ = user;
+            std::string token = generate_jwt(user);
+            send_json(json{{"type", "auth_success"}, {"username", user}, {"action", "login"}, {"token", token}});
+        } else {
+            send_json(json{{"type", "error"}, {"message", "Sai tên đăng nhập hoặc mật khẩu"}});
+        }
+        return;
+    }
 
     if (type == "find_match") {
         lobby_.try_pair(shared_from_this());
