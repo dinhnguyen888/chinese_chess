@@ -2,6 +2,23 @@
 #include <pqxx/pqxx>
 #include <iostream>
 
+void Database::auto_create_db(const std::string& host, const std::string& port, const std::string& user, const std::string& password, const std::string& dbname) {
+    try {
+        std::string default_conn = "host=" + host + " port=" + port + " dbname=postgres user=" + user + " password=" + password;
+        pqxx::connection default_c(default_conn);
+        pqxx::nontransaction ntx(default_c);
+        
+        pqxx::result res = ntx.exec_params("SELECT 1 FROM pg_database WHERE datname=$1", dbname);
+        if (res.empty()) {
+            std::cout << "Database '" << dbname << "' chua ton tai. Dang tu dong tao moi...\n";
+            ntx.exec("CREATE DATABASE " + dbname);
+            std::cout << "Tao Database '" << dbname << "' thanh cong!\n";
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Loi khi auto-create DB: " << e.what() << "\n(Neu Database da ton tai thi ban co the bo qua loi nay)\n";
+    }
+}
+
 void Database::init() {
     try {
         if (conn_str_.empty()) {

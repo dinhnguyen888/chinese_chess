@@ -6,7 +6,9 @@
 
 int main() {
     try {
-        // Cấu hình CSD
+        // Cấu hình CSDL: Tự động tạo 'chess_db' 
+        Database::get_instance().auto_create_db("localhost", "5432", "postgres", "postgres", "chess_db");
+
         std::string db_conn = "host=localhost port=5432 user=postgres password=postgres dbname=chess_db";
         Database::get_instance().init_connection(db_conn);
         Database::get_instance().init();

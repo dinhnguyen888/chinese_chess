@@ -3,11 +3,16 @@
 
 class Database {
 public:
+    Database(const Database&) = delete;
+    Database& operator=(const Database&) = delete;
+
     static Database& get_instance() {
         static Database instance;
         return instance;
     }
     
+    void auto_create_db(const std::string& host, const std::string& port, const std::string& user, const std::string& password, const std::string& dbname);
+
     // Tạo bảng nếu chưa có
     void init();
     
