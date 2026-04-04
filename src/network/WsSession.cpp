@@ -202,9 +202,17 @@ void WsSession::handle_message(const std::string& text) {
                 my_result = opp_result = "draw";
             }
 
+            // Đặt biến moves_array rỗng (nếu có thì lấy từ frontend)
+            std::vector<std::string> moves_array;
+            if (msg.contains("moves") && msg["moves"].is_array()) {
+                for (const auto& m : msg["moves"]) {
+                    moves_array.push_back(m.get<std::string>());
+                }
+            }
+
             if (!my_name.empty() && !opp_name.empty()) {
-                Database::get_instance().save_match(my_name,  opp_name, my_result,  duration);
-                Database::get_instance().save_match(opp_name, my_name,  opp_result, duration);
+                Database::get_instance().save_match(my_name,  opp_name, my_result,  duration, moves_array);
+                Database::get_instance().save_match(opp_name, my_name,  opp_result, duration, moves_array);
                 std::cout << "Match saved: " << my_name << "(" << my_result << ") vs "
                           << opp_name << "(" << opp_result << ")\n";
             }
@@ -222,6 +230,7 @@ void WsSession::handle_message(const std::string& text) {
         json arr = json::array();
         for (const auto& r : records) {
             arr.push_back({
+                {"id", r.id},
                 {"opponent", r.opponent},
                 {"result", r.result},
                 {"played_at", r.played_at},
@@ -231,15 +240,35 @@ void WsSession::handle_message(const std::string& text) {
         send_json(json{{"type", "history_list"}, {"records", arr}});
         return;
     }
+    if (type == "get_replay") {
+        int match_id = msg.value("match_id", -1);
+        if (match_id != -1) {
+            auto moves = Database::get_instance().get_match_moves(match_id);
+            json moves_arr = json::array();
+            for (const auto& m : moves) {
+                moves_arr.push_back(m);
+            }
+            send_json(json{{"type", "replay_data"}, {"match_id", match_id}, {"moves", moves_arr}});
+        }
+        return;
+    }
     if (type == "game_result") {
         std::string opponent = msg.value("opponent", "");
         std::string result   = msg.value("result", "draw");  // "win" | "lose" | "draw"
         int duration         = msg.value("duration_seconds", 0);
+        
+        std::vector<std::string> moves_array;
+        if (msg.contains("moves") && msg["moves"].is_array()) {
+            for (const auto& m : msg["moves"]) {
+                moves_array.push_back(m.get<std::string>());
+            }
+        }
+
         if (!name_.empty() && !opponent.empty()) {
-            Database::get_instance().save_match(name_, opponent, result, duration);
+            Database::get_instance().save_match(name_, opponent, result, duration, moves_array);
             // Cũng lưu phía đối thủ với kết quả ngược lại
             std::string opp_result = (result == "win") ? "lose" : (result == "lose" ? "win" : "draw");
-            Database::get_instance().save_match(opponent, name_, opp_result, duration);
+            Database::get_instance().save_match(opponent, name_, opp_result, duration, moves_array);
         }
         return;
     }

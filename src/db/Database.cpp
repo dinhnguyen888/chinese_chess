@@ -44,8 +44,16 @@ void Database::init() {
             "played_at TIMESTAMP DEFAULT NOW()"
             ");"
         );
+        w.exec(
+            "CREATE TABLE IF NOT EXISTS match_moves ("
+            "id SERIAL PRIMARY KEY,"
+            "match_id INT NOT NULL REFERENCES match_history(id) ON DELETE CASCADE,"
+            "move_index INT NOT NULL,"
+            "move_data VARCHAR(150) NOT NULL"
+            ");"
+        );
         w.commit();
-        std::cout << "Database initialized (users + match_history tables checked).\n";
+        std::cout << "Database initialized (users + match_history + match_moves tables checked).\n";
     } catch (const std::exception& e) {
         std::cerr << "DB Init Error: " << e.what() << "\n";
     }
@@ -95,15 +103,30 @@ bool Database::login_user(const std::string& username, const std::string& passwo
 }
 
 bool Database::save_match(const std::string& username, const std::string& opponent,
-                          const std::string& result, int duration_seconds) {
+                          const std::string& result, int duration_seconds, const std::vector<std::string>& moves) {
     try {
         if (conn_str_.empty()) return false;
         pqxx::connection c(conn_str_);
         pqxx::work w(c);
-        w.exec_params(
-            "INSERT INTO match_history (username, opponent, result, duration_seconds) VALUES ($1, $2, $3, $4);",
+        
+        // Insert vào match_history và lấy id trả về (sử dụng RETURNING id)
+        pqxx::result res = w.exec_params(
+            "INSERT INTO match_history (username, opponent, result, duration_seconds) "
+            "VALUES ($1, $2, $3, $4) RETURNING id;",
             username, opponent, result, duration_seconds
         );
+        
+        if (res.empty()) return false;
+        int match_id = res[0][0].as<int>();
+
+        // Lặp qua mảng moves và insert vào match_moves
+        for (size_t i = 0; i < moves.size(); ++i) {
+            w.exec_params(
+                "INSERT INTO match_moves (match_id, move_index, move_data) VALUES ($1, $2, $3);",
+                match_id, (int)i, moves[i]
+            );
+        }
+
         w.commit();
         return true;
     } catch (const std::exception& e) {
@@ -119,12 +142,13 @@ std::vector<MatchRecord> Database::get_history(const std::string& username, int 
         pqxx::connection c(conn_str_);
         pqxx::nontransaction w(c);
         pqxx::result r = w.exec_params(
-            "SELECT opponent, result, TO_CHAR(played_at, 'DD/MM/YYYY HH24:MI') as played_at, duration_seconds "
+            "SELECT id, opponent, result, TO_CHAR(played_at, 'DD/MM/YYYY HH24:MI') as played_at, duration_seconds "
             "FROM match_history WHERE username=$1 ORDER BY played_at DESC LIMIT $2;",
             username, limit
         );
         for (const auto& row : r) {
             MatchRecord rec;
+            rec.id = row["id"].as<int>();
             rec.opponent = row["opponent"].c_str();
             rec.result = row["result"].c_str();
             rec.played_at = row["played_at"].c_str();
@@ -135,4 +159,23 @@ std::vector<MatchRecord> Database::get_history(const std::string& username, int 
         std::cerr << "DB GetHistory Error: " << e.what() << "\n";
     }
     return records;
+}
+
+std::vector<std::string> Database::get_match_moves(int match_id) {
+    std::vector<std::string> moves;
+    try {
+        if (conn_str_.empty()) return moves;
+        pqxx::connection c(conn_str_);
+        pqxx::nontransaction w(c);
+        pqxx::result r = w.exec_params(
+            "SELECT move_data FROM match_moves WHERE match_id=$1 ORDER BY move_index ASC;",
+            match_id
+        );
+        for (const auto& row : r) {
+            moves.push_back(row["move_data"].c_str());
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "DB GetMatchMoves Error: " << e.what() << "\n";
+    }
+    return moves;
 }

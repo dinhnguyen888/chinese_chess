@@ -3,6 +3,7 @@
 #include <vector>
 
 struct MatchRecord {
+    int id;
     std::string opponent;
     std::string result;   // "win" | "lose" | "draw"
     std::string played_at;
@@ -33,12 +34,15 @@ public:
     // Trả về true nếu login đúng
     bool login_user(const std::string& username, const std::string& password);
 
-    // Lưu kết quả một trận đấu
+    // Lưu kết quả một trận đấu kèm danh sách các nước đi
     bool save_match(const std::string& username, const std::string& opponent,
-                    const std::string& result, int duration_seconds);
+                    const std::string& result, int duration_seconds, const std::vector<std::string>& moves);
 
     // Lấy danh sách lịch sử đấu của người chơi (mới nhất trước)
     std::vector<MatchRecord> get_history(const std::string& username, int limit = 20);
+
+    // Lấy danh sách các nước đi của một trận đấu
+    std::vector<std::string> get_match_moves(int match_id);
 
 private:
     Database() = default;
