@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 
-// quan ly ket noi csdl
 namespace db {
     bool auto_create(const std::string& host, const std::string& port,
                      const std::string& user, const std::string& password,

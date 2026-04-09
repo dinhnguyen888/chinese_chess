@@ -7,34 +7,28 @@
 #include <queue>
 #include <string>
 
-class MatchLobby;
+class MatchLobbyService;
+class Player;
 
 class WsSession : public std::enable_shared_from_this<WsSession> {
 public:
-    std::string name_;
-    std::string current_room_id_;
-
-    WsSession(boost::asio::ip::tcp::socket&& socket, MatchLobby& lobby);
+    WsSession(boost::asio::ip::tcp::socket&& socket, MatchLobbyService& lobby);
 
     void run();
     void send_json(const nlohmann::json& j);
-    void attach_opponent(const std::shared_ptr<WsSession>& other);
-    void clear_opponent();
-    std::shared_ptr<WsSession> opponent_lock() const;
 
 private:
     void on_accept(boost::beast::error_code ec);
     void do_read();
     void on_read(boost::beast::error_code ec, std::size_t bytes);
-    void handle_message(const std::string& text);
     void do_write();
     void on_write(boost::beast::error_code ec, std::size_t bytes);
     void on_close();
 
     boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
     boost::beast::flat_buffer buffer_;
-    MatchLobby& lobby_;
-    std::weak_ptr<WsSession> opponent_;
+    MatchLobbyService& lobby_;
+    std::shared_ptr<Player> player_;
     std::queue<std::string> write_queue_;
     bool closed_{false};
 };

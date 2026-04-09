@@ -1,6 +1,6 @@
-#include "network/Listener.h"
-#include "network/WsSession.h"
-#include "game/MatchLobby.h"
+#include "network/listener.h"
+#include "network/ws_session.h"
+#include "service/match_lobby_service.h"
 #include <iostream>
 
 namespace beast = boost::beast;
@@ -10,7 +10,7 @@ static void fail(beast::error_code ec, char const* what) {
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
-Listener::Listener(boost::asio::io_context& ioc, tcp::endpoint endpoint, std::shared_ptr<MatchLobby> lobby)
+Listener::Listener(boost::asio::io_context& ioc, tcp::endpoint endpoint, std::shared_ptr<MatchLobbyService> lobby)
     : ioc_(ioc), acceptor_(ioc), lobby_(std::move(lobby)) {
     beast::error_code ec;
     acceptor_.open(endpoint.protocol(), ec);

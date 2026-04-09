@@ -3,11 +3,11 @@
 #include <boost/beast/core.hpp>
 #include <memory>
 
-class MatchLobby;
+class MatchLobbyService;
 
 class Listener : public std::enable_shared_from_this<Listener> {
 public:
-    Listener(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint endpoint, std::shared_ptr<MatchLobby> lobby);
+    Listener(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint endpoint, std::shared_ptr<MatchLobbyService> lobby);
     void run();
 
 private:
@@ -16,5 +16,5 @@ private:
 
     boost::asio::io_context& ioc_;
     boost::asio::ip::tcp::acceptor acceptor_;
-    std::shared_ptr<MatchLobby> lobby_;
+    std::shared_ptr<MatchLobbyService> lobby_;
 };
