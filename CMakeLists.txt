@@ -1,4 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
+
+# Silence dev warnings from newer CMake (FetchContent timestamps, FindBoost removal).
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
 project(server_chinese_chess)
 
 set(CMAKE_CXX_STANDARD 20)

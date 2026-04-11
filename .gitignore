@@ -1,0 +1,15 @@
+# Build directories
+build/
+bin/
+obj/
+cmake-build-*/
+.vs/
+.idea/
+
+# Environment variables
+.env
+.env.*
+
+# Logs and temp files
+*.log
+*.tmp
