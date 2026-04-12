@@ -10,7 +10,7 @@ public:
     static std::optional<users> login_user(const std::string& username, const std::string& password);
     static std::optional<users> get_user_by_username(const std::string& username);
     
-    static std::vector<users> get_all_users();
+    static std::pair<std::vector<users>, int> get_all_users(int page = 1, int page_size = 20);
     static bool create_user(const std::string& username, const std::string& password, const std::string& role);
     static bool update_user(int id, const std::string& username, const std::string& password, const std::string& role);
     static bool delete_user(int id);

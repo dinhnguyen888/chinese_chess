@@ -43,13 +43,29 @@ http::response<http::string_body> handle_admin_request(const http::request<http:
     std::string target = std::string(req.target());
 
     // GET /admin/users
-    if (req.method() == http::verb::get && target == "/admin/users") {
-        auto users = UserService::get_all_users();
+    if (req.method() == http::verb::get && target.find("/admin/users") == 0) {
+        int page = 1;
+        int limit = 20;
+        
+        std::regex page_regex("page=([0-9]+)");
+        std::regex limit_regex("limit=([0-9]+)");
+        std::smatch match;
+        if (std::regex_search(target, match, page_regex)) page = std::stoi(match[1]);
+        if (std::regex_search(target, match, limit_regex)) limit = std::stoi(match[1]);
+
+        auto [users, total] = UserService::get_all_users(page, limit);
         json j_users = json::array();
         for (auto const& u : users) {
-            j_users.push_back({{"id", u.id}, {"username", u.username}, {"role", u.role}});
+            j_users.push_back({
+                {"id", u.id}, 
+                {"username", u.username}, 
+                {"role", u.role},
+                {"banned_until", u.banned_until},
+                {"can_chat", u.can_chat},
+                {"can_create_room", u.can_create_room}
+            });
         }
-        return make_json_response(http::status::ok, j_users, version, keep_alive);
+        return make_json_response(http::status::ok, json{{"data", j_users}, {"total", total}}, version, keep_alive);
     }
 
     // POST /admin/users
@@ -109,8 +125,17 @@ http::response<http::string_body> handle_admin_request(const http::request<http:
     }
 
     // GET /admin/reports
-    if (req.method() == http::verb::get && target == "/admin/reports") {
-        auto reports = ReportService::get_all_reports();
+    if (req.method() == http::verb::get && target.find("/admin/reports") == 0) {
+        int page = 1;
+        int limit = 20;
+        
+        std::regex page_regex("page=([0-9]+)");
+        std::regex limit_regex("limit=([0-9]+)");
+        std::smatch match;
+        if (std::regex_search(target, match, page_regex)) page = std::stoi(match[1]);
+        if (std::regex_search(target, match, limit_regex)) limit = std::stoi(match[1]);
+
+        auto [reports, total] = ReportService::get_all_reports(page, limit);
         json j_reports = json::array();
         for (auto const& r : reports) {
             j_reports.push_back({
@@ -118,7 +143,7 @@ http::response<http::string_body> handle_admin_request(const http::request<http:
                 {"match_id", r.match_id}, {"reason", r.reason}, {"status", r.status}, {"created_at", r.created_at}
             });
         }
-        return make_json_response(http::status::ok, j_reports, version, keep_alive);
+        return make_json_response(http::status::ok, json{{"data", j_reports}, {"total", total}}, version, keep_alive);
     }
 
     // PUT /admin/reports (update status)

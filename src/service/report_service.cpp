@@ -22,12 +22,26 @@ bool ReportService::create_report(const std::string& reporter, const std::string
     }
 }
 
-std::vector<reports> ReportService::get_all_reports() {
+std::pair<std::vector<reports>, int> ReportService::get_all_reports(int page, int page_size) {
     std::vector<reports> report_list;
+    int total_count = 0;
     try {
         pqxx::connection c(db::conn_str());
         pqxx::nontransaction w(c);
-        pqxx::result r = w.exec("SELECT id, reporter, reported, COALESCE(match_id, 0) as match_id, reason, status, TO_CHAR(created_at, 'DD/MM/YYYY HH24:MI') as created_at FROM reports ORDER BY created_at DESC;");
+        
+        // Get total count
+        pqxx::result r_count = w.exec("SELECT COUNT(*) FROM reports;");
+        total_count = r_count[0][0].as<int>();
+
+        // Get paged data
+        int offset = (page - 1) * page_size;
+        pqxx::result r = w.exec_params(
+            "SELECT id, reporter, reported, COALESCE(match_id, 0) as match_id, reason, status, "
+            "TO_CHAR(created_at, 'DD/MM/YYYY HH24:MI') as created_at "
+            "FROM reports ORDER BY id DESC LIMIT $1 OFFSET $2;",
+            page_size, offset
+        );
+
         for (const auto& row : r) {
             report_list.push_back({
                 row["id"].as<int>(),
@@ -42,7 +56,7 @@ std::vector<reports> ReportService::get_all_reports() {
     } catch (const std::exception& e) {
         std::cerr << "report::get_all error: " << e.what() << "\n";
     }
-    return report_list;
+    return {report_list, total_count};
 }
 
 bool ReportService::update_report_status(int id, const std::string& status) {

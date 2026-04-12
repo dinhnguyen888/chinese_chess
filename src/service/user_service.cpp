@@ -70,12 +70,25 @@ std::optional<users> UserService::get_user_by_username(const std::string& userna
     }
 }
 
-std::vector<users> UserService::get_all_users() {
+std::pair<std::vector<users>, int> UserService::get_all_users(int page, int page_size) {
     std::vector<users> users_list;
+    int total_count = 0;
     try {
         pqxx::connection c(db::conn_str());
         pqxx::nontransaction w(c);
-        pqxx::result r = w.exec("SELECT id, username, role, TO_CHAR(banned_until, 'YYYY-MM-DD HH24:MI:SS') as banned_until, can_chat, can_create_room FROM users ORDER BY id ASC;");
+        
+        // Get total count
+        pqxx::result r_count = w.exec("SELECT COUNT(*) FROM users;");
+        total_count = r_count[0][0].as<int>();
+
+        // Get paged data
+        int offset = (page - 1) * page_size;
+        pqxx::result r = w.exec_params(
+            "SELECT id, username, role, TO_CHAR(banned_until, 'YYYY-MM-DD HH24:MI:SS') as banned_until, can_chat, can_create_room "
+            "FROM users ORDER BY id ASC LIMIT $1 OFFSET $2;",
+            page_size, offset
+        );
+
         for (auto const& row : r) {
             users u;
             u.id = row["id"].as<int>();
@@ -89,7 +102,7 @@ std::vector<users> UserService::get_all_users() {
     } catch (const std::exception& e) {
         std::cerr << "user::get_all_users error: " << e.what() << "\n";
     }
-    return users_list;
+    return {users_list, total_count};
 }
 
 bool UserService::create_user(const std::string& username, const std::string& password, const std::string& role) {
