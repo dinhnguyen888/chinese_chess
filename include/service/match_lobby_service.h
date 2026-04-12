@@ -7,11 +7,16 @@
 
 class Player;
 
-class MatchLobbyService {
+class MatchLobbyService : public std::enable_shared_from_this<MatchLobbyService> {
 public:
+    void register_player(const std::string& name, std::shared_ptr<Player> player);
+    void unregister_player(const std::string& name);
+    
+    // Bắn thông báo phạt về cho người chơi online
+    void notify_punishment(const std::string& target, const std::string& reason, const std::string& reporter);
+
     void try_pair(std::shared_ptr<Player> player);
     void cancel_waiting(const std::shared_ptr<Player>& player);
-
     void create_room(std::shared_ptr<Player> player, const std::string& room_name, bool auto_start);
     void join_room(std::shared_ptr<Player> player, const std::string& room_id);
     void start_game(std::shared_ptr<Player> player, const std::string& room_id);
@@ -24,4 +29,7 @@ private:
 
     std::mutex mutex_;
     MatchLobbyState state_;
+    std::unordered_map<std::string, std::shared_ptr<Player>> online_players_;
 };
+
+extern std::shared_ptr<MatchLobbyService> g_lobby;

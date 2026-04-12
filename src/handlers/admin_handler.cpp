@@ -3,6 +3,7 @@
 #include "db/match_db.h"
 #include "db/report_db.h"
 #include "utils/jwt_utils.h"
+#include "service/match_lobby_service.h"
 #include <nlohmann/json.hpp>
 #include <boost/beast/http.hpp>
 #include <regex>
@@ -141,6 +142,11 @@ http::response<http::string_body> handle_admin_request(const http::request<http:
             bool can_create_room = body.value("can_create_room", true);
 
             if (db::user::apply_punishment(target_user, ban_days, can_chat, can_create_room)) {
+                if (g_lobby) {
+                    std::string reason = body.value("reason", "Vi phạm tiêu chuẩn cộng đồng");
+                    std::string reporter = body.value("reporter", "Hệ thống");
+                    g_lobby->notify_punishment(target_user, reason, reporter);
+                }
                 return make_json_response(http::status::ok, json{{"success", true}}, version, keep_alive);
             }
         } catch (...) {}

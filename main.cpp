@@ -30,6 +30,7 @@ int main() {
 
         boost::asio::io_context ioc{1};
         auto lobby = std::make_shared<MatchLobbyService>();
+        g_lobby = lobby;
         std::cout << "[Init] MatchLobbyService created.\n";
 
         auto ws_listener = std::make_shared<Listener>(ioc, boost::asio::ip::tcp::endpoint{address, ws_port}, lobby);

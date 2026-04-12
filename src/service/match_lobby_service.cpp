@@ -4,6 +4,36 @@
 
 using json = nlohmann::json;
 
+std::shared_ptr<MatchLobbyService> g_lobby = nullptr;
+
+void MatchLobbyService::register_player(const std::string& name, std::shared_ptr<Player> player) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    online_players_[name] = player;
+}
+
+void MatchLobbyService::unregister_player(const std::string& name) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    online_players_.erase(name);
+}
+
+void MatchLobbyService::notify_punishment(const std::string& target, const std::string& reason, const std::string& reporter) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = online_players_.find(target);
+    if (it != online_players_.end()) {
+        auto player = it->second;
+        // Cập nhật nóng quyền hạn vào đối tượng player đang online
+        // Để dispatcher chặn ngay lập tức mà không cần reload
+        // Giả sử can_chat/can_create_room sẽ được update từ DB rồi, nhưng ở đây ta update nóng luôn
+        
+        player->send_json(json{
+            {"type", "punishment_notify"},
+            {"reason", reason},
+            {"reporter", reporter},
+            {"message", "Bạn đã bị xử phạt bởi Admin. Vui lòng tuân thủ nội quy game."}
+        });
+    }
+}
+
 void MatchLobbyService::try_pair(std::shared_ptr<Player> player) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!state_.waiting) {

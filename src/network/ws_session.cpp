@@ -105,6 +105,9 @@ void WsSession::on_accept(beast::error_code ec) {
             player_->can_create_room = user_opt->can_create_room;
         }
 
+        // Đăng ký player vào danh sách online để Admin có thể bắn notify
+        lobby_.register_player(player_->name, player_);
+
         player_->send_json(json{
             {"type", "auth_success"}, 
             {"username", player_->name}, 
@@ -179,6 +182,7 @@ void WsSession::on_close() {
     closed_ = true;
 
     if (player_) {
+        lobby_.unregister_player(player_->name);
         lobby_.cancel_waiting(player_);
         if (auto peer = player_->opponent_lock()) {
             peer->clear_opponent();
