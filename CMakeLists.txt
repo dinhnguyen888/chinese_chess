@@ -20,7 +20,9 @@ file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 target_sources(server_chinese_chess PRIVATE ${PROJECT_SOURCES})
 target_include_directories(server_chinese_chess PRIVATE include)
 
-add_compile_definitions(_WIN32_WINNT=0x0601)
+if(WIN32)
+    add_compile_definitions(_WIN32_WINNT=0x0601)
+endif()
 if(MSVC)
     add_compile_options(/permissive- /Zc:dllexportInlines-)
 endif()
@@ -40,11 +42,13 @@ target_link_libraries(server_chinese_chess PRIVATE
     Threads::Threads
     OpenSSL::SSL
     OpenSSL::Crypto
-    ws2_32
     nlohmann_json::nlohmann_json
     libpqxx::pqxx
     jwt-cpp::jwt-cpp
 )
+if(WIN32)
+    target_link_libraries(server_chinese_chess PRIVATE ws2_32)
+endif()
 
 if(MSVC)
     target_link_options(server_chinese_chess PRIVATE /FORCE:MULTIPLE)

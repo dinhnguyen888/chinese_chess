@@ -1,0 +1,51 @@
+# Docker Compose cho Debug (breakpoints từ VS Code)
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chess_db
+    volumes:
+      - pgdata_debug:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.debug
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: chess_db
+      WS_PORT: 8080
+      HTTP_PORT: 8081
+    ports:
+      - "8080:8080"   # WebSocket
+      - "8081:8081"   # HTTP API
+      - "2345:2345"   # GDB debugger
+    volumes:
+      # Mount source code trực tiếp → rebuild nhanh không cần rebuild image
+      - .:/app
+      # Không mount build dir từ Windows vào (sẽ conflict)
+      - /app/build
+    security_opt:
+      - seccomp:unconfined  # Required for gdb/ptrace
+    cap_add:
+      - SYS_PTRACE          # Required for gdb attach
+
+volumes:
+  pgdata_debug:

@@ -13,6 +13,8 @@ cmake-build-*/
 # Logs and temp files
 *.log
 *.tmp
+.vscode
+.vs
 
 # SQL Migrations
 migrations/

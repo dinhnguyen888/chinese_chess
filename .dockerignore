@@ -1,0 +1,28 @@
+# Build artifacts
+build/
+bin/
+obj/
+cmake-build-*/
+
+# IDE
+.vs/
+.idea/
+.vscode/
+
+# Environment
+.env
+.env.*
+env.example
+
+# Logs and temp
+*.log
+*.tmp
+
+# Docker build cache
+docker-compose.override.yml
+
+# Migrations (generated)
+migrations/
+
+# Tests
+tests/
