@@ -35,6 +35,9 @@ RUN mkdir -p build && cd build && \
     cmake .. -DCMAKE_BUILD_TYPE=Release && \
     cmake --build . -j$(nproc)
 
+# Generate a baseline migration from models so fresh databases can bootstrap tables.
+RUN mkdir -p /app/migrations && /app/build/server_chinese_chess add-migration auto_init
+
 # ========================
 # Stage 2: Runtime
 # ========================
