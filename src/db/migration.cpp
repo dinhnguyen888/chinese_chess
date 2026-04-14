@@ -49,9 +49,18 @@ void add_migration(const std::string& name) {
     std::regex type_rx(R"reg(type\("(.*?)"\))reg");
     std::regex o2m_rx(R"reg(one2many\("(.*?)"\))reg");
 
+    std::vector<fs::path> model_files;
     for (const auto& entry : fs::directory_iterator("include/model")) {
         if (entry.path().extension() == ".h" && entry.path().filename() != "schema_def.h") {
-            std::ifstream in(entry.path());
+            model_files.push_back(entry.path());
+        }
+    }
+    std::sort(model_files.begin(), model_files.end());
+
+    for (const auto& model_file : model_files) {
+        const auto& model_path = model_file;
+        if (model_path.extension() == ".h" && model_path.filename() != "schema_def.h") {
+            std::ifstream in(model_path);
             std::string line;
             TableDef curr;
             bool in_struct = false;

@@ -9,6 +9,9 @@
 
 int main(int argc, char* argv[]) {
     try {
+        std::cout.setf(std::ios::unitbuf);
+        std::cerr.setf(std::ios::unitbuf);
+
         if (argc > 1) {
             std::string cmd = argv[1];
             if (cmd == "add-migration") {
