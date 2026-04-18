@@ -16,20 +16,23 @@ void MatchLobbyService::unregister_player(const std::string& name) {
     online_players_.erase(name);
 }
 
-void MatchLobbyService::notify_punishment(const std::string& target, const std::string& reason, const std::string& reporter) {
+void MatchLobbyService::notify_punishment(const std::string& target, const std::string& reason, const std::string& reporter, int ban_days, bool can_chat, bool can_create_room) {
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = online_players_.find(target);
     if (it != online_players_.end()) {
         auto player = it->second;
         // Cập nhật nóng quyền hạn vào đối tượng player đang online
-        // Để dispatcher chặn ngay lập tức mà không cần reload
-        // Giả sử can_chat/can_create_room sẽ được update từ DB rồi, nhưng ở đây ta update nóng luôn
+        player->can_chat = can_chat;
+        player->can_create_room = can_create_room;
         
         player->send_json(json{
             {"type", "punishment_notify"},
             {"reason", reason},
             {"reporter", reporter},
-            {"message", "Bạn đã bị xử phạt bởi Admin. Vui lòng tuân thủ nội quy game."}
+            {"ban_days", ban_days},
+            {"can_chat", can_chat},
+            {"can_create_room", can_create_room},
+            {"message", "Bạn đã bị xử lý vi phạm. Vui lòng kiểm tra chi tiết để biết các hạn chế."}
         });
     }
 }

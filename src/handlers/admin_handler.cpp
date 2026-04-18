@@ -170,7 +170,7 @@ http::response<http::string_body> handle_admin_request(const http::request<http:
                 if (g_lobby) {
                     std::string reason = body.value("reason", "Vi phạm tiêu chuẩn cộng đồng");
                     std::string reporter = body.value("reporter", "Hệ thống");
-                    g_lobby->notify_punishment(target_user, reason, reporter);
+                    g_lobby->notify_punishment(target_user, reason, reporter, ban_days, can_chat, can_create_room);
                 }
                 return make_json_response(http::status::ok, json{{"success", true}}, version, keep_alive);
             }

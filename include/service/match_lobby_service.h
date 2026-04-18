@@ -13,7 +13,7 @@ public:
     void unregister_player(const std::string& name);
     
     // Bắn thông báo phạt về cho người chơi online
-    void notify_punishment(const std::string& target, const std::string& reason, const std::string& reporter);
+    void notify_punishment(const std::string& target, const std::string& reason, const std::string& reporter, int ban_days, bool can_chat, bool can_create_room);
 
     void try_pair(std::shared_ptr<Player> player);
     void cancel_waiting(const std::shared_ptr<Player>& player);

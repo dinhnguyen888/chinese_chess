@@ -5,7 +5,7 @@ obj/
 cmake-build-*/
 .vs/
 .idea/
-
+.vscode/
 # Environment variables
 .env
 .env.*
