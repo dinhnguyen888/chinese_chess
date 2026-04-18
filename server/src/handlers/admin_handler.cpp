@@ -28,7 +28,7 @@ http::response<http::string_body> handle_admin_request(const http::request<http:
     auto keep_alive = req.keep_alive();
 
     // Verification
-    std::string auth_header = req[http::field::authorization];
+    std::string auth_header(req[http::field::authorization]);
     if (auth_header.size() < 7 || auth_header.substr(0, 7) != "Bearer ") {
         return make_json_response(http::status::unauthorized, json{{"error", "missing_token"}}, version, keep_alive);
     }

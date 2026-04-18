@@ -6,6 +6,8 @@
 #include "utils/env_config.h"
 #include <boost/asio.hpp>
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 int main(int argc, char* argv[]) {
     try {
@@ -32,12 +34,27 @@ int main(int argc, char* argv[]) {
         std::string db_pass = utils::EnvConfig::get("DB_PASS", "postgres");
         std::string db_name = utils::EnvConfig::get("DB_NAME", "chess_db");
 
-        db::auto_create(db_host, db_port, db_user, db_pass, db_name);
-        
         std::string conn_str = "host=" + db_host + " port=" + db_port + 
                               " user=" + db_user + " password=" + db_pass + 
                               " dbname=" + db_name;
-        db::connect(conn_str);
+
+        int retry = 0;
+        bool db_connected = false;
+        while (retry < 15) {
+            std::cout << "[Init] Attempting to connect to database... (" << retry + 1 << "/15)\n";
+            db::auto_create(db_host, db_port, db_user, db_pass, db_name);
+            if (db::connect(conn_str)) {
+                db_connected = true;
+                break;
+            }
+            std::cout << "[Init] Database connection failed. Retrying in 2 seconds...\n";
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            retry++;
+        }
+
+        if (!db_connected) {
+            throw std::runtime_error("Failed to connect to database after 15 retries.");
+        }
 
         if (argc > 1) {
             std::string cmd = argv[1];
