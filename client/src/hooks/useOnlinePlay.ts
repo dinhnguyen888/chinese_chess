@@ -7,7 +7,6 @@ import {
 } from '../models/chessSlice';
 import { store } from '../store';
 import { wsUrlWithToken } from '../config/server';
-import { pushNotification } from '../components/button/NotificationBell';
 
 export let globalWs: WebSocket | null = null;
 
@@ -27,8 +26,7 @@ export function useOnlinePlay() {
   const matchStartTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('chess_jwt_token');
-    if (!token || !isLoggedIn) {
+    if (mode !== 5) {
       wsRef.current?.close();
       wsRef.current = null;
       globalWs = null;
@@ -36,12 +34,14 @@ export function useOnlinePlay() {
       return;
     }
 
-    // Đừng tạo mới nếu đã kết nối hoặc đang kết nối
-    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+    lastSentPaceLenRef.current = 0;
+    const token = localStorage.getItem('chess_jwt_token');
+    if (!token) {
+      wsRef.current = null;
+      globalWs = null;
       return;
     }
 
-    lastSentPaceLenRef.current = 0;
     const ws = new WebSocket(wsUrlWithToken(token));
     wsRef.current = ws;
     globalWs = ws;
@@ -117,23 +117,18 @@ export function useOnlinePlay() {
       }
 
       if (msg.type === 'punishment_notify') {
-        // Đẩy vào hệ thống thông báo (cookie + badge đỏ)
-        pushNotification(
-          msg.reason as string,
-          msg.reporter as string,
-          msg.message as string,
-          (msg.ban_days as number) || 0,
-          msg.can_chat as boolean !== false, // default true if undefined
-          msg.can_create_room as boolean !== false // default true if undefined
-        );
-
-        // Vẫn hiện Modal tức thì để user biết ngay
+        const info = `Lý do: ${msg.reason}. Người tố cáo: ${msg.reporter}. ${msg.message}`;
         Modal.warning({
           title: 'THÔNG BÁO XỬ PHẠT',
-          content: `Lý do: ${msg.reason}. Người tố cáo: ${msg.reporter}. Chi tiết: ${msg.message}`,
+          content: info,
           centered: true,
           okText: 'Tôi đã hiểu',
         });
+        
+        // Lưu vào cookie trong 7 ngày
+        const d = new Date();
+        d.setTime(d.getTime() + (7*24*60*60*1000));
+        document.cookie = "punishment_info=" + encodeURIComponent(info) + ";expires=" + d.toUTCString() + ";path=/";
         return;
       }
 
@@ -196,7 +191,7 @@ export function useOnlinePlay() {
       ws.close();
       if (wsRef.current === ws) wsRef.current = null;
     };
-  }, [dispatch, isLoggedIn]);
+  }, [mode, dispatch, isLoggedIn]);
 
   useEffect(() => {
     if (mode !== 5 || roomStatus !== 'playing') return;

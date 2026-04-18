@@ -1,0 +1,63 @@
+services:
+  # Database Service
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      # Defaults if .env is missing
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+      POSTGRES_DB: ${DB_NAME:-chess_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Backend Server (C++)
+  server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-postgres}
+      DB_NAME: ${DB_NAME:-chess_db}
+      WS_PORT: ${WS_PORT:-8080}
+      HTTP_PORT: ${HTTP_PORT:-8081}
+    ports:
+      - "${WS_PORT:-8080}:8080"
+      - "${HTTP_PORT:-8081}:8081"
+
+  # Frontend Client (React)
+  client:
+    build:
+      context: ../client
+      dockerfile: Dockerfile
+      args:
+        # Pass the public URLs to Vite during the build step.
+        # These URLs will be injected into the static JS files.
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8081}
+        VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:8080}
+    restart: unless-stopped
+    depends_on:
+      - server
+    environment:
+      BACKEND_HOST: server
+      BACKEND_HTTP_PORT: ${HTTP_PORT:-8081}
+      BACKEND_WS_PORT: ${WS_PORT:-8080}
+    ports:
+      - "${CLIENT_PORT:-3000}:80"
+
+volumes:
+  pgdata:
