@@ -39,7 +39,11 @@ const RoomList: React.FC = () => {
       <List<RoomInfo>
         dataSource={rooms}
         locale={{ emptyText: <span style={{ color: 'rgba(255,255,255,0.3)' }}>Chưa có phòng nào. Hãy tạo phòng mới!</span> }}
-        renderItem={item => (
+        renderItem={item => {
+          const isOwner = item.host === playerName;
+          const isFull = Boolean(item.guest);
+          const isJoinDisabled = item.isPlaying || isOwner || isFull;
+          return (
           <List.Item
             style={{
               background: 'rgba(255,255,255,0.04)', borderRadius: 8, marginBottom: 8,
@@ -48,14 +52,14 @@ const RoomList: React.FC = () => {
             actions={[
               <Button
                 key="join"
-                disabled={item.isPlaying || item.host === playerName}
+                disabled={isJoinDisabled}
                 type="primary"
                 icon={<LoginOutlined />}
                 onClick={() => joinRoom(item.id)}
                 size="small"
                 danger={item.isPlaying}
               >
-                {item.host === playerName ? 'Phòng bạn' : item.isPlaying ? 'Đang chơi' : 'Vào phòng'}
+                {isOwner ? 'Phòng bạn' : item.isPlaying ? 'Đang chơi' : isFull ? 'Đã đầy' : 'Vào phòng'}
               </Button>
             ]}
           >
@@ -73,7 +77,7 @@ const RoomList: React.FC = () => {
               }
             />
           </List.Item>
-        )}
+        )}}
         style={{ maxHeight: 320, overflowY: 'auto' }}
       />
     </div>
