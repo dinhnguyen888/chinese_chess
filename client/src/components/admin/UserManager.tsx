@@ -41,6 +41,7 @@ const UserManager: React.FC = () => {
   const [historyTarget, setHistoryTarget] = useState<string | null>(null);
   const [punishTarget, setPunishTarget] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('1');
+  const [highlightedUser, setHighlightedUser] = useState<string | null>(null);
   const [form] = Form.useForm();
 
   const fetchReports = async (page = 1) => {
@@ -84,6 +85,23 @@ const UserManager: React.FC = () => {
     fetchUsers();
     fetchReports();
   }, []);
+
+  // Scroll + highlight user row when navigating from Reports tab
+  useEffect(() => {
+    if (activeTab === '1' && highlightedUser) {
+      const found = users.find(u => u.username === highlightedUser);
+      if (!found) {
+        fetchUsers(1);
+        return;
+      }
+      setTimeout(() => {
+        const el = document.querySelector(`tr.highlighted-user-row`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+    }
+  }, [activeTab, highlightedUser, users]);
 
   const handleCreateOrUpdate = async (values: any) => {
     setLoading(true);
@@ -243,7 +261,10 @@ const UserManager: React.FC = () => {
       render: (t: string) => (
         <Button
           type="link"
-          onClick={() => { setActiveTab('1'); setHistoryTarget(t); }}
+          onClick={() => {
+            setHighlightedUser(t);
+            setActiveTab('1');
+          }}
           style={{ padding: 0, fontWeight: 'bold', color: '#cf1322' }}
         >
           {t}
@@ -337,11 +358,21 @@ const UserManager: React.FC = () => {
               dataSource={users}
               rowKey="id"
               loading={loading}
+              rowClassName={(record) =>
+                record.username === highlightedUser ? 'highlighted-user-row' : ''
+              }
+              onRow={(record) => ({
+                style: record.username === highlightedUser ? {
+                  background: 'linear-gradient(90deg, #fff1b8, #fffbe6)',
+                  boxShadow: 'inset 3px 0 0 #faad14',
+                  transition: 'background 0.3s',
+                } : {}
+              })}
               pagination={{
                 current: userPage,
                 total: userTotal,
                 pageSize: 10,
-                onChange: (page) => fetchUsers(page)
+                onChange: (page) => { fetchUsers(page); setHighlightedUser(highlightedUser); }
               }}
             />
           </TabPane>
