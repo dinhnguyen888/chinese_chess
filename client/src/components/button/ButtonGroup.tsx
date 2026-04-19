@@ -139,7 +139,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
           {replayIndex} / {replayTotal}
         </span>
 
-        <Button danger size="large" onClick={() => { setAutoPlay(false); dispatch(exitReplay()); }}>
+        <Button danger size="large" onClick={() => { setAutoPlay(false); dispatch(exitReplay()); window.close(); }}>
           Thoát xem
         </Button>
       </div>
@@ -178,45 +178,45 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
       <div style={containerStyle}>
         {/* Nút gợi ý (ẩn khi không dùng được) */}
         {(mode !== 2 && mode !== 5) && (
-            <Button
-              size='large'
-              onClick={() => dispatch(showHint())}
-            >
-              Gợi ý
-            </Button>
+          <Button
+            size='large'
+            onClick={() => dispatch(showHint())}
+          >
+            Gợi ý
+          </Button>
         )}
 
         {renderThirdButton()}
 
         {/* Nút đổi bên (ẩn ở chế độ Online hoặc khi là chế độ Máy tự đánh) */}
         {(mode !== 5 && !(mode === 2 && Math.abs(side) === 1)) && (
-            <Button
-              size='large'
-              onClick={() => dispatch(changeSide())}
-            >
-              Đổi bên
-            </Button>
+          <Button
+            size='large'
+            onClick={() => dispatch(changeSide())}
+          >
+            Đổi bên
+          </Button>
         )}
 
         {/* Nút chấp quân (ẩn ở Online và Máy đánh) */}
         {(mode !== 2 && mode !== 5) && (
-            <Button
-              size='large'
-              onClick={() => dispatch(clearChess())}
-            >
-              Chấp quân
-            </Button>
+          <Button
+            size='large'
+            onClick={() => dispatch(clearChess())}
+          >
+            Chấp quân
+          </Button>
         )}
-        
+
         {/* Nút Đầu Hàng hoặc Hòa cờ có thể thêm tại đây cho chế độ Online */}
-        <Button 
-          danger 
-          size="large" 
+        <Button
+          danger
+          size="large"
           onClick={() => {
             if (mode === 5) {
-               window.location.reload(); 
+              window.location.reload();
             } else {
-               dispatch(onGameOver());
+              dispatch(onGameOver());
             }
           }}
         >
