@@ -21,6 +21,10 @@ void RoomService::pair_players(std::shared_ptr<Player> a, std::shared_ptr<Player
     a->attach_opponent(b);
     b->attach_opponent(a);
 
+    // Reset server-side move counter for anti-cheat validation
+    a->reset_game_move_count();
+    b->reset_game_move_count();
+
     constexpr int kRedFirst = 1;
     json msg_a = {{"type", "matched"}, {"color", "r"}, {"orderSide", kRedFirst}, {"opponentName", b->name}};
     json msg_b = {{"type", "matched"}, {"color", "b"}, {"orderSide", kRedFirst}, {"opponentName", a->name}};

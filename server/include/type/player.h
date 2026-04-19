@@ -21,6 +21,11 @@ public:
     bool can_chat = true;
     bool can_create_room = true;
 
+    // Server-side move counter (reset each game, validated on win claim)
+    int server_move_count = 0;
+
+    void reset_game_move_count() { server_move_count = 0; }
+
     void attach_opponent(std::shared_ptr<Player> other) {
         opponent_ = other;
     }

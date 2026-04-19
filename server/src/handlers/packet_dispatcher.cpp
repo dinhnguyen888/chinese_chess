@@ -3,6 +3,7 @@
 #include "handlers/game_handler.h"
 #include "type/player.h"
 #include "service/match_lobby_service.h"
+#include "service/anti_cheat_service.h"
 
 using json = nlohmann::json;
 
@@ -40,16 +41,21 @@ void PacketDispatcher::dispatch(std::shared_ptr<Player> player, MatchLobbyServic
 
     // Enforcement
     if (type == "chat" && !player->can_chat) {
-        player->send_json(json{{"type", "error"}, {"message", "Bạn đã bị cấm chat"}});
+        player->send_json(json{{"type", "error"}, {"message", "You are banned from chatting"}});
         return;
     }
     if ((type == "create_room" || type == "find_match") && !player->can_create_room) {
-        player->send_json(json{{"type", "error"}, {"message", "Bạn đã bị cấm tạo phòng hoặc tìm trận"}});
+        player->send_json(json{{"type", "error"}, {"message", "You are banned from creating rooms or finding matches"}});
         return;
     }
 
     if (msg.contains("name")) {
         player->name = msg.value("name", player->name.empty() ? "Player" : player->name);
+    }
+
+    // --- Anti-Cheat gate ---
+    if (!AntiCheatService::instance().check_packet(player, msg)) {
+        return; // dropped by anti-cheat
     }
 
     auto it = handlers_.find(type);
