@@ -182,3 +182,20 @@
     border-right-color: var(--border);
   }
 }
+
+/* Admin: highlight user row when navigating from Reports tab */
+@keyframes highlightPulse {
+  0%   { background-color: #fffbe6; }
+  30%  { background-color: #ffe58f; }
+  60%  { background-color: #fffbe6; }
+  100% { background-color: #fffbe6; }
+}
+
+.highlighted-user-row td {
+  animation: highlightPulse 1.8s ease 2;
+  background-color: #fffbe6 !important;
+}
+
+.highlighted-user-row:hover td {
+  background-color: #fff1b8 !important;
+}
